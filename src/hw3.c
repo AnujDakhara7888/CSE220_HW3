@@ -225,6 +225,24 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                             }
                         }
                     }
+                    //checking ahead as well just to be sure
+                    if(col+1<game->cols)
+                    {
+                        for(int i=col;i<col+sizeOfTile;i++)
+                        {
+                            if(game->store[row][i+1]>=1 || game->store[row][i]>=1)
+                            {
+                                h=1;
+                                first=i;
+                                checker=1;
+                                break;
+                            }
+                            if(!((i+1)+1<game->cols))
+                            {
+                                break;
+                            }
+                        }
+                    }
                     //checkedcolumn
                     if(col==0)
                     {
@@ -253,7 +271,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                     {
                         sizeOfTile=game->rows-row;
                     }
-                    //checking row
+                    //checking col-1
                     if((col)>0)
                     {
                         for(int i=row;i<row+sizeOfTile;i++)
@@ -267,7 +285,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                             }
                         }
                     }
-                    //checking row+1
+                    //checking col+1
                     if(col+1<game->cols)
                     {
                         for(int i=row;i<row+sizeOfTile;i++)
@@ -281,7 +299,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                             }
                         }
                     }
-                    //checking left of each element in row
+                    //checking above of each element in col
                     if(row>0)
                     {
                         for(int i=row;i<row+sizeOfTile;i++)
@@ -293,6 +311,25 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                                 checker=1;
                                 break;
                             }
+                        }
+                    }
+                    //checking ahead as well just to be sure
+                    if(row+1<game->rows)
+                    {
+                        for(int i=row;i<row+sizeOfTile;i++)
+                        {
+                            if(game->store[i+1][col]>=1 || game->store[i][col]>=1)
+                            {
+                                h=1;
+                                first=i;
+                                checker=1;
+                                break;
+                            }
+                            if(!((i+1)+1<game->rows))
+                            {
+                                break;
+                            }
+
                         }
                     }
                     //checkedcolumn
@@ -326,6 +363,18 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                 int wordIndex=0;
                 const char *start = tiles;
                 int count;
+                int countStackPile=0;
+                //int countForAllWords=0;
+                int tileCounter=0;
+                while(*tiles)
+                {
+                    if(*tiles!=' ')
+                    {
+                        tileCounter++;
+                    }
+                    tiles++;
+                }
+                tiles=start;
                 if(toupper(direction)=='H')
                 {
                     if((col + length)>game->cols)
@@ -353,7 +402,9 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         {
                             word[wordIndex++]=game->board[row][count][(game->store[row][count])-1];
                         }
+                        countStackPile++;
                         count++;
+                        //countForAllWords++;
                     }
                     count=wordIndex;
                     int traverse=first;
@@ -366,10 +417,12 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                     {
                         if(game->store[row][traverse]>=1 && (*tiles==' '))
                         {
+                            countStackPile++;
                             word[wordIndex++]=game->board[row][traverse][(game->store[row][traverse])-1];
                         }
                         else if(game->store[row][traverse]==0 && (isalpha(*tiles)))
                         {
+                            countStackPile++;
                             word[wordIndex++]=*tiles;
                         }
                         else
@@ -379,11 +432,18 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                                 *num_tiles_placed=0;
                                 return game;
                             }
+                            if(game->store[row][traverse]==5)
+                            {
+                                *num_tiles_placed=0;
+                                return game;
+                            }
                             word[wordIndex++]=*tiles;
+                            countStackPile++;
                         }
                         i++;
                         tiles++;
                         traverse++;
+                        //countForAllWords++;
                     }
                     //storing till a . in our word
                     if((traverse<game->cols) && (game->store[row][traverse])>=1)
@@ -392,8 +452,26 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         {
                             word[wordIndex++]=game->board[row][traverse][(game->store[row][traverse])-1];
                             traverse++;
+                            countStackPile++;
+                            //countForAllWords++;
                         }
                     }
+                    if(tileCounter!=1)
+                    {
+                        if(countStackPile==tileCounter)
+                        {
+                            *num_tiles_placed=0;
+                            return game;
+                        }
+                    }
+                    // if(tileCounter!=1)
+                    // {
+                    //     if(countForAllWords==tileCounter)
+                    //     {
+                    //         *num_tiles_placed=0;
+                    //         return game;
+                    //     }
+                    // }
                 }
                 else
                 {
@@ -422,7 +500,9 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         {
                             word[wordIndex++]=game->board[count][col][(game->store[count][col])-1];
                         }
+                        countStackPile++;
                         count++;
+                        //countForAllWords++;
                     }
                     count=wordIndex;
                     int traverse=first;
@@ -448,11 +528,19 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                                 *num_tiles_placed=0;
                                 return game;
                             }
+                            if(game->store[traverse][col]==5)
+                            {
+                                *num_tiles_placed=0;
+                                return game;
+                            }
                             word[wordIndex++]=*tiles;
+                            countStackPile++;
                         }
                         traverse++;
                         i++;
                         tiles++;
+                        countStackPile++;
+                        //countForAllWords++;
                     }
                     //storing till a . in our word
                     if((traverse<game->rows) && (game->store[traverse][col])>=1)
@@ -461,8 +549,25 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         {
                             word[wordIndex++]=game->board[traverse][col][(game->store[traverse][col])-1];
                             traverse++;
+                            //countForAllWords++;
                         }
                     }
+                    if(tileCounter!=1)
+                    {
+                        if(countStackPile==tileCounter)
+                        {
+                            *num_tiles_placed=0;
+                            return game;
+                        }
+                    }
+                    // if(tileCounter!=1)
+                    // {
+                    //     if(countForAllWords==tileCounter)
+                    //     {
+                    //         *num_tiles_placed=0;
+                    //         return game;
+                    //     }
+                    // }
                 }
                 word[wordIndex]='\0';
                 int found =0;
@@ -502,6 +607,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         return game;
                     }
                 }
+                tiles=start;
                 if(found==1)
                 {
                     int tempLength=(strlen(word))-count;
@@ -518,7 +624,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                                 game->board[row][i][0]=*tiles;
                                 game->store[row][i]=1;
                             }
-                            else if(game->store[row][i]==1 && (!isalpha(*tiles)))
+                            else if(game->store[row][i]>=1 && (!isalpha(*tiles)))
                             {
                                 howMuch++;
                             }
@@ -548,7 +654,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                                 game->board[i][col][0]=*tiles;
                                 game->store[i][col]=1;
                             }
-                            else if(game->store[i][col]==1 && (!isalpha(*tiles)))
+                            else if(game->store[i][col]>=1 && (!isalpha(*tiles)))
                             {
                                 howMuch++;
                             }
