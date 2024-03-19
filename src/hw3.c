@@ -8,6 +8,9 @@
 
 #define DEBUG(...) fprintf(stderr, "[          ] [ DEBUG ] "); fprintf(stderr, __VA_ARGS__); fprintf(stderr, " -- %s()\n", __func__)
 
+void changeGameStateByCols(GameState *game,int colNumber,int oldCol,int numColsToBeAdded);
+void changeGameStateByRows(GameState *game,int rowNumber,int oldRow,int numRowsToBeAdded);
+
 GameState* initialize_game_state(const char *filename) {
     FILE* fp = fopen(filename,"r");
     if(fp==NULL)
@@ -21,6 +24,7 @@ GameState* initialize_game_state(const char *filename) {
         char c;
         
         GameState *state = (GameState*)(malloc(sizeof(GameState)));
+        state->firstTile=0;
         int make = 0;
         while ((c = fgetc(fp)) != EOF) 
         {
@@ -52,24 +56,6 @@ GameState* initialize_game_state(const char *filename) {
             }
         }
         fseek(fp, 0, SEEK_SET);
-        // for(int i=0;i<rowCount;i++)
-        // {
-        //     for(int j=0;j<2;j++)
-        //     {
-        //         fscanf(fp,"%c",&c);
-        //         state->board[i][j][0]=c;
-        //         printf("%d %d %c\n",i,j,c);
-        //         // printf("%c ",state->board[i][j][0]);
-        //         if(c=='.')
-        //         {
-        //             state->store[i][j]=0;
-        //         }
-        //         else
-        //         {
-        //             state->store[i][j]=1;
-        //         }
-        //     }
-        // }
         int currentRow = 0, currentCol = 0;
 
         while ((c = fgetc(fp)) != EOF && currentRow < rowCount) {
@@ -87,9 +73,9 @@ GameState* initialize_game_state(const char *filename) {
                 }
                 else 
                 {
+                    state->firstTile=1;
                     state->store[currentRow][currentCol] = 1;
                 }
-
                 currentCol++; 
             }
         }
@@ -100,15 +86,546 @@ GameState* initialize_game_state(const char *filename) {
 }
 
 GameState* place_tiles(GameState *game, int row, int col, char direction, const char *tiles, int *num_tiles_placed) {
-    (void)game;
-    (void)row;
-    (void)col;
-    (void)direction;
-    (void)tiles;
-    (void)num_tiles_placed;
-    return game;
-}
+    if(row>=0 && col>=0 && (row<=((game->rows)-1)) && (col<=((game->cols)-1)))
+    {
+        if(toupper(direction) == 'V' || toupper(direction) == 'H')
+        {
+            if(game->firstTile == 0)
+            {
+                FILE* fp = fopen("./tests/words.txt","r");
+                int found =0;
+                char s[100];
+                while(!feof(fp))
+                {
+                    fscanf(fp,"%s",s);
+                    if(!strcasecmp(s,tiles))
+                    {
+                        found=1;
+                        break;
+                    }
+                }
+                if(found==0)
+                {
+                    fseek(fp, 0, SEEK_SET);
+                    int len = strlen(tiles);
+                    if(len>0 && ((tiles[len-1]=='s') || (tiles[len-1]=='S')))
+                    {
+                        char p[len];
+                        strncpy(p, tiles, len - 1);
+                        p[len-1] = '\0';
+                        while(!feof(fp))
+                        {
+                            fscanf(fp,"%s",s);
+                            if(!strcasecmp(s,p))
+                            {
+                                found=1;
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return game;
+                    }
 
+                }
+                if(found==1)
+                { 
+                    if(strlen(tiles)>=2)
+                    {
+                        int length = strlen(tiles);
+                        if(toupper(direction)=='H')
+                        {
+                            if((col + length)>game->cols)
+                            {
+                                changeGameStateByCols(game,col,game->cols,length);
+                            }
+                            for(int i=col;i<(col + length);i++)
+                            {
+                                game->board[row][i][0] = toupper(*(tiles++));
+                                game->store[row][i] = 1;
+                            }
+                            *num_tiles_placed = length;
+                        }
+                        else
+                        {
+                            if((row + length)>game->rows)
+                            {
+                                changeGameStateByRows(game,row,game->rows,length);
+                            }
+                            for(int i=row;i<(row + length);i++)
+                            {
+                                game->board[i][col][0] = toupper(*(tiles++));
+                                game->store[i][col] = 1;
+                            }  
+                            *num_tiles_placed=length;
+                        }
+                        game->firstTile=1;
+                        return game;
+                    }
+                    else
+                    {
+                        return game;
+                    }
+                }
+            }
+            else
+            {
+                //checking if something is connecting or not
+                int checker=0;
+                int first=0;
+                int v=0;
+                int h=0;
+                if(toupper(direction)=='H')
+                {
+                    int sizeOfTile = strlen(tiles);
+                    if((col+sizeOfTile)>game->cols)
+                    {
+                        sizeOfTile=game->cols-col;
+                    }
+                    //checking row
+                    if((row)>0)
+                    {
+                        for(int i=col;i<col+sizeOfTile;i++)
+                        {
+                            if(game->store[row-1][i]>=1)
+                            {
+                                v=1;
+                                first=i;
+                                checker=1;
+                                break;
+                            }
+                        }
+                    }
+                    //checking row+1
+                    if(row+1<game->rows)
+                    {
+                        for(int i=col;i<col+sizeOfTile;i++)
+                        {
+                            if(game->store[row+1][i]>=1)
+                            {
+                                v=1;
+                                first=i;
+                                checker=1;
+                                break;
+                            }
+                        }
+                    }
+                    //checking left of each element in row
+                    if(col>0)
+                    {
+                        for(int i=col;i<col+sizeOfTile;i++)
+                        {
+                            if(game->store[row][i-1]>=1 || game->store[row][i]>=1)
+                            {
+                                h=1;
+                                first=i;
+                                checker=1;
+                                break;
+                            }
+                        }
+                    }
+                    //checkedcolumn
+                    if(col==0)
+                    {
+                        for(int i=(col+1);i<col+sizeOfTile;i++)
+                        {
+                            if(game->store[row][i-1]>=1 || game->store[row][i]>=1)
+                            {
+                                h=1;
+                                first=i;
+                                checker=1;
+                                break;
+                            }
+                        }
+                        if(game->store[row][0]>=1)
+                        {
+                            h=1;
+                            first=0;
+                            checker=1;
+                        }
+                    }
+                }
+                else
+                {
+                    int sizeOfTile = strlen(tiles);
+                    if((row+sizeOfTile)>game->rows)
+                    {
+                        sizeOfTile=game->rows-row;
+                    }
+                    //checking row
+                    if((col)>0)
+                    {
+                        for(int i=row;i<row+sizeOfTile;i++)
+                        {
+                            if(game->store[i][col-1]>=1)
+                            {
+                                h=1;
+                                first=i;
+                                checker=1;
+                                break;
+                            }
+                        }
+                    }
+                    //checking row+1
+                    if(col+1<game->cols)
+                    {
+                        for(int i=row;i<row+sizeOfTile;i++)
+                        {
+                            if(game->store[i][col+1]>=1)
+                            {
+                                h=1;
+                                first=i;
+                                checker=1;
+                                break;
+                            }
+                        }
+                    }
+                    //checking left of each element in row
+                    if(row>0)
+                    {
+                        for(int i=row;i<row+sizeOfTile;i++)
+                        {
+                            if(game->store[i-1][col]>=1 || game->store[i][col]>=1)
+                            {
+                                v=1;
+                                first=i;
+                                checker=1;
+                                break;
+                            }
+                        }
+                    }
+                    //checkedcolumn
+                    if(row==0)
+                    {
+                        for(int i=(row+1);i<row+sizeOfTile;i++)
+                        {
+                            if(game->store[i-1][row]>=1 || game->store[i][row]>=1)
+                            {
+                                v=1;
+                                first=i;
+                                checker=1;
+                                break;
+                            }
+                        }
+                        if(game->store[0][col]>=1)
+                        {
+                            v=1;
+                            first=0;
+                            checker=1;
+                        }
+                    }
+                }
+                if(checker==0)
+                {
+                    return game;
+                }
+                //creating word and checking in file
+                char word[100];
+                int length = strlen(tiles);
+                int wordIndex=0;
+                const char *start = tiles;
+                int count;
+                if(toupper(direction)=='H')
+                {
+                    if((col + length)>game->cols)
+                    {
+                        changeGameStateByCols(game,col,game->cols,length);
+                    }
+                    int i=0;
+                    count=first;
+                    //finding elmenet backwards to make word
+                    while(count>0)
+                    {
+                        if(game->store[row][count-1]>=1)
+                        {
+                            count--;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    //goes to element till . is found
+                    while(count<first)
+                    {
+                        if(game->store[row][count]>=1)
+                        {
+                            word[wordIndex++]=game->board[row][count][(game->store[row][count])-1];
+                        }
+                        count++;
+                    }
+                    count=wordIndex;
+                    int traverse=first;
+                    if(traverse>col)
+                    {
+                        traverse=col;
+                    }
+                    //once dot found and stored now putting the remaining without space words picked from tiles and our board
+                    while(i<length)
+                    {
+                        if(game->store[row][traverse]>=1 && (*tiles==' '))
+                        {
+                            word[wordIndex++]=game->board[row][traverse][(game->store[row][traverse])-1];
+                        }
+                        else if(game->store[row][traverse]==0 && (isalpha(*tiles)))
+                        {
+                            word[wordIndex++]=*tiles;
+                        }
+                        else
+                        {
+                            if(game->board[row][traverse][(game->store[row][traverse])-1] == *tiles)
+                            {
+                                *num_tiles_placed=0;
+                                return game;
+                            }
+                            word[wordIndex++]=*tiles;
+                        }
+                        i++;
+                        tiles++;
+                        traverse++;
+                    }
+                    //storing till a . in our word
+                    if((traverse<game->cols) && (game->store[row][traverse])>=1)
+                    {
+                        while((traverse<game->cols) && (game->store[row][traverse])>=1 && isalpha(game->board[row][traverse][(game->store[row][traverse])-1]))
+                        {
+                            word[wordIndex++]=game->board[row][traverse][(game->store[row][traverse])-1];
+                            traverse++;
+                        }
+                    }
+                }
+                else
+                {
+                    if((row + length)>game->rows)
+                    {
+                        changeGameStateByRows(game,row,game->rows,length);
+                    }
+                    int i=0;
+                    count=first;
+                    //finding elmenet backwards to make word
+                    while(count>0)
+                    {
+                        if(game->store[count-1][col]>=1)
+                        {
+                            count--;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    //goes to element till . is found
+                    while(count<first)
+                    {
+                        if(game->store[count][col]>=1)
+                        {
+                            word[wordIndex++]=game->board[count][col][(game->store[count][col])-1];
+                        }
+                        count++;
+                    }
+                    count=wordIndex;
+                    int traverse=first;
+                    if(traverse>row)
+                    {
+                        traverse=row;
+                    }
+                    //once dot found and stored now putting the remaining without space words picked from tiles and our board
+                    while(i<length)
+                    {
+                        if(game->store[traverse][col]>=1 && (*tiles==' '))
+                        {
+                            word[wordIndex++]=game->board[traverse][col][(game->store[traverse][col])-1];
+                        }
+                        else if(game->store[traverse][col]==0 && (isalpha(*tiles)))
+                        {
+                            word[wordIndex++]=*tiles;
+                        }
+                        else
+                        {
+                            if(game->board[traverse][col][(game->store[traverse][col])-1] == *tiles)
+                            {
+                                *num_tiles_placed=0;
+                                return game;
+                            }
+                            word[wordIndex++]=*tiles;
+                        }
+                        traverse++;
+                        i++;
+                        tiles++;
+                    }
+                    //storing till a . in our word
+                    if((traverse<game->rows) && (game->store[traverse][col])>=1)
+                    {
+                        while((traverse<game->rows) && (game->store[traverse][col])>=1 && isalpha(game->board[traverse][col][(game->store[traverse][col])-1]))
+                        {
+                            word[wordIndex++]=game->board[traverse][col][(game->store[traverse][col])-1];
+                            traverse++;
+                        }
+                    }
+                }
+                word[wordIndex]='\0';
+                int found =0;
+                tiles=start;
+                FILE* fp = fopen("./tests/words.txt","r");
+                char s[100];
+                while(!feof(fp))
+                {
+                    fscanf(fp,"%s",s);
+                    if(!strcasecmp(s,word))
+                    {
+                        found=1;
+                        break;
+                    }
+                }
+                if(found==0)
+                {
+                    fseek(fp, 0, SEEK_SET);
+                    int len = strlen(word);
+                    if(len>0 && (word[len-1]=='s' || (tiles[len-1]=='S')))
+                    {
+                        char p[len];
+                        strncpy(p, word, len - 1);
+                        p[len] = '\0';
+                        while(!feof(fp))
+                        {
+                            fscanf(fp,"%s",s);
+                            if(!strcasecmp(s,p))
+                            {
+                                found=1;
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return game;
+                    }
+                }
+                if(found==1)
+                {
+                    int tempLength=(strlen(word))-count;
+                    int howMuch=0;
+                    int tileCOunt=0;
+                    if(toupper(direction)=='H')
+                    {
+                        for(int i=col;i<(col + tempLength);i++)
+                        {
+                            if(game->store[row][i]==0 && (isalpha(*tiles)))
+                            {
+                                tileCOunt++;
+                                howMuch++;
+                                game->board[row][i][0]=*tiles;
+                                game->store[row][i]=1;
+                            }
+                            else if(game->store[row][i]==1 && (!isalpha(*tiles)))
+                            {
+                                howMuch++;
+                            }
+                            else
+                            {
+                                tileCOunt++;
+                                howMuch++;
+                                game->board[row][i][(game->store[row][i])]=*tiles;
+                                game->store[row][i]=(game->store[row][i])+1;
+                            }
+                            if(*tiles=='\0')
+                            {
+                                break;
+                            }
+                            tiles++;
+                        }
+                        *num_tiles_placed = tileCOunt;
+                    }
+                    else
+                    {
+                        for(int i=row;i<(row + tempLength);i++)
+                        {
+                            if(game->store[i][col]==0 && (isalpha(*tiles)))
+                            {
+                                tileCOunt++;
+                                howMuch++;
+                                game->board[i][col][0]=*tiles;
+                                game->store[i][col]=1;
+                            }
+                            else if(game->store[i][col]==1 && (!isalpha(*tiles)))
+                            {
+                                howMuch++;
+                            }
+                            else
+                            {
+                                tileCOunt++;
+                                howMuch++;
+                                game->board[i][col][(game->store[i][col])]=*tiles;
+                                game->store[i][col]=(game->store[i][col])+1;
+                            }
+                            if(*tiles=='\0')
+                            {
+                                break;
+                            }
+                            tiles++;
+                        }
+                        *num_tiles_placed = tileCOunt;
+                    }
+                }
+                
+                (void)h;
+                (void)v;
+                fclose(fp);
+                return game;
+            }
+        }
+        else
+        {
+            return game;
+        }
+    }
+   
+    return game;
+    
+}
+void changeGameStateByCols(GameState *game,int colNumber,int oldCol,int numColsToBeAdded)
+{
+    int newCol = (colNumber + numColsToBeAdded) - (game->cols);
+    game->cols=(game->cols)+newCol;
+
+    for (int i = 0; i<(game->rows); i++) 
+    {
+        game->board[i] = (char**)realloc(game->board[i], game->cols * sizeof(char*));
+        game->store[i] = (int*)realloc(game->store[i], game->cols * sizeof(int));
+
+        for (int j = oldCol; j<(game->cols); j++) 
+        {
+            game->board[i][j] = (char*)calloc(5, sizeof(char));
+        }
+    }
+    for (int i = 0; i<(game->rows); i++) 
+    {
+        for (int j = oldCol; j<(game->cols); j++) 
+        {
+            game->board[i][j][0] = '.';
+            game->store[i][j] = 0;
+        }
+    }
+}
+void changeGameStateByRows(GameState *game, int rowNumber, int oldRow, int numRowsToBeAdded) {
+    int newRow = (rowNumber + numRowsToBeAdded) - game->rows;
+    game->rows = (game->rows) +newRow; 
+
+    game->board = (char***)realloc(game->board, game->rows * sizeof(char**));
+    game->store = (int**)realloc(game->store, game->rows * sizeof(int*));
+
+    for (int i = oldRow; i < game->rows; i++) {
+        game->board[i] = (char**)calloc(game->cols, sizeof(char*));
+        game->store[i] = (int*)calloc(game->cols, sizeof(int));
+        for (int j = 0; j < game->cols; j++) 
+        {
+            game->board[i][j] = (char*)calloc(5, sizeof(char));
+            game->board[i][j][0] = '.';
+            game->store[i][j] = 0; 
+        }
+    }
+}
 GameState* undo_place_tiles(GameState *game) {
     (void)game;
     return game;
@@ -116,9 +633,9 @@ GameState* undo_place_tiles(GameState *game) {
 
 void free_game_state(GameState *game) 
 {
-    for(int i = 0; i < game->rows; i++)
+    for(int i = 0;i<(game->rows); i++)
     {
-        for(int j = 0; j < game->cols; j++)
+        for(int j=0;j<(game->cols);j++)
         {
             free(game->board[i][j]);
         }

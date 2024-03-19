@@ -6,6 +6,7 @@ typedef struct GameState
     int **store;
     int rows;
     int cols;
+    int firstTile;
 } GameState;
 
 GameState* initialize_game_state(const char *filename);
