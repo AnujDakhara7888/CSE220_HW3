@@ -427,15 +427,20 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         }
                         else
                         {
-                            if(game->board[row][traverse][(game->store[row][traverse])-1] == *tiles)
-                            {
-                                *num_tiles_placed=0;
-                                return game;
-                            }
                             if(game->store[row][traverse]==5)
                             {
                                 *num_tiles_placed=0;
                                 return game;
+                            }
+                            //change here
+                            if(game->store[row][traverse]>=1)
+                            {
+                                if(game->board[row][traverse][(game->store[row][traverse])-1] == *tiles)
+                                {
+                                    //change here;
+                                    *num_tiles_placed=0;
+                                    return game;
+                                }
                             }
                             word[wordIndex++]=*tiles;
                             countStackPile++;
@@ -524,15 +529,19 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         }
                         else
                         {
-                            if(game->board[traverse][col][(game->store[traverse][col])-1] == *tiles)
-                            {
-                                *num_tiles_placed=0;
-                                return game;
-                            }
                             if(game->store[traverse][col]==5)
                             {
                                 *num_tiles_placed=0;
                                 return game;
+                            }
+                            //change here
+                            if(game->store[traverse][col]>=1)
+                            {
+                                if(game->board[traverse][col][(game->store[traverse][col])-1] == *tiles)
+                                {
+                                    *num_tiles_placed=0;
+                                    return game;
+                                }
                             }
                             word[wordIndex++]=*tiles;
                             countStackPile++;
