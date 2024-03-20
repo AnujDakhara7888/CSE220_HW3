@@ -364,7 +364,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                 const char *start = tiles;
                 int count;
                 int countStackPile=0;
-                //int countForAllWords=0;
+                int countForAllWords=0;
                 int tileCounter=0;
                 while(*tiles)
                 {
@@ -401,8 +401,8 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         if(game->store[row][count]>=1)
                         {
                             word[wordIndex++]=game->board[row][count][(game->store[row][count])-1];
+                            countForAllWords++;
                         }
-                        countStackPile++;
                         count++;
                         //countForAllWords++;
                     }
@@ -417,12 +417,12 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                     {
                         if(game->store[row][traverse]>=1 && (*tiles==' '))
                         {
-                            countStackPile++;
+                            countForAllWords++;
                             word[wordIndex++]=game->board[row][traverse][(game->store[row][traverse])-1];
                         }
                         else if(game->store[row][traverse]==0 && (isalpha(*tiles)))
                         {
-                            countStackPile++;
+                            countForAllWords++;
                             word[wordIndex++]=*tiles;
                         }
                         else
@@ -452,13 +452,12 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         {
                             word[wordIndex++]=game->board[row][traverse][(game->store[row][traverse])-1];
                             traverse++;
-                            countStackPile++;
-                            //countForAllWords++;
+                            countForAllWords++;
                         }
                     }
                     if(tileCounter!=1)
                     {
-                        if(countStackPile==tileCounter)
+                        if(countStackPile==tileCounter && countForAllWords==0)
                         {
                             *num_tiles_placed=0;
                             return game;
@@ -499,8 +498,8 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         if(game->store[count][col]>=1)
                         {
                             word[wordIndex++]=game->board[count][col][(game->store[count][col])-1];
+                            countForAllWords++;
                         }
-                        countStackPile++;
                         count++;
                         //countForAllWords++;
                     }
@@ -515,10 +514,12 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                     {
                         if(game->store[traverse][col]>=1 && (*tiles==' '))
                         {
+                            countForAllWords++;
                             word[wordIndex++]=game->board[traverse][col][(game->store[traverse][col])-1];
                         }
                         else if(game->store[traverse][col]==0 && (isalpha(*tiles)))
                         {
+                            countForAllWords++;
                             word[wordIndex++]=*tiles;
                         }
                         else
@@ -539,7 +540,6 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         traverse++;
                         i++;
                         tiles++;
-                        countStackPile++;
                         //countForAllWords++;
                     }
                     //storing till a . in our word
@@ -549,12 +549,12 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         {
                             word[wordIndex++]=game->board[traverse][col][(game->store[traverse][col])-1];
                             traverse++;
-                            //countForAllWords++;
+                            countForAllWords++;
                         }
                     }
                     if(tileCounter!=1)
                     {
-                        if(countStackPile==tileCounter)
+                        if(countStackPile==tileCounter && countForAllWords==0)
                         {
                             *num_tiles_placed=0;
                             return game;
@@ -587,7 +587,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                 {
                     fseek(fp, 0, SEEK_SET);
                     int len = strlen(word);
-                    if(len>0 && (word[len-1]=='s' || (tiles[len-1]=='S')))
+                    if(len>0 && (word[len-1]=='s' || (word[len-1]=='S')))
                     {
                         char p[len];
                         strncpy(p, word, len - 1);
@@ -604,6 +604,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                     }
                     else
                     {
+                        *num_tiles_placed=0;
                         return game;
                     }
                 }
@@ -683,6 +684,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
         }
         else
         {
+            *num_tiles_placed=0;
             return game;
         }
     }
