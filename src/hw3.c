@@ -429,6 +429,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                 int countStackPile=0;
                 int countForAllWords=0;
                 int tileCounter=0;
+                int tileCheck=0;
                 while(*tiles)
                 {
                     if(*tiles!=' ')
@@ -548,7 +549,6 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                                 int traverse=count1;
                                 //fidning letter connected to our tile
                                 tiles=start;
-                                printf("Tiles is %s",tiles);
                                 char c;
                                 for(int i=col;i<=touchHorizontal[1];i++)
                                 {
@@ -599,10 +599,10 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                     
                     }
                     tiles=start;
-                    if((col + length)>game->cols)
-                    {
-                        changeGameStateByCols(game,col,game->cols,length);
-                    }
+                    // if((col + length)>game->cols)
+                    // {
+                    //     changeGameStateByCols(game,col,game->cols,length);
+                    // }
                     int i=0;
                     count=first;
                     //finding elmenet backwards to make word
@@ -635,7 +635,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         traverse=col;
                     }
                     //once dot found and stored now putting the remaining without space words picked from tiles and our board
-                    while(i<length)
+                    while(i<length && traverse<game->cols)
                     {
                         if(game->store[row][traverse]>=1 && (*tiles==' '))
                         {
@@ -671,6 +671,15 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         tiles++;
                         traverse++;
                         //countForAllWords++;
+                    }
+                    //storing if more tile there
+                    while(traverse<(col+length))
+                    {
+                        word[wordIndex++]=*tiles;
+                        tiles++;
+                        countForAllWords++;
+                        traverse++;
+                        tileCheck=1;
                     }
                     //storing till a . in our word
                     if((traverse<game->cols) && (game->store[row][traverse])>=1)
@@ -851,10 +860,10 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                     
                     }
                     tiles=start;
-                    if((row + length)>game->rows)
-                    {
-                        changeGameStateByRows(game,row,game->rows,length);
-                    }
+                    // if((row + length)>game->rows)
+                    // {
+                    //     changeGameStateByRows(game,row,game->rows,length);
+                    // }
                     int i=0;
                     count=first;
                     //finding elmenet backwards to make word
@@ -887,7 +896,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         traverse=row;
                     }
                     //once dot found and stored now putting the remaining without space words picked from tiles and our board
-                    while(i<length)
+                    while(i<length && traverse<game->rows)
                     {
                         if(game->store[traverse][col]>=1 && (*tiles==' '))
                         {
@@ -922,6 +931,15 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         i++;
                         tiles++;
                         //countForAllWords++;
+                    }
+                    //storing if more tile there
+                    while(traverse<(row+length))
+                    {
+                        word[wordIndex++]=*tiles;
+                        tiles++;
+                        countForAllWords++;
+                        traverse++;
+                        tileCheck=1;
                     }
                     //storing till a . in our word
                     if((traverse<game->rows) && (game->store[traverse][col])>=1)
@@ -982,6 +1000,17 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                     }
                 }
                 tiles=start;
+                if(tileCheck==1)
+                {
+                    if(toupper(direction)=='H')
+                    {
+                        changeGameStateByCols(game,col,game->cols,length);
+                    }
+                    else
+                    {
+                        changeGameStateByRows(game,row,game->rows,length);
+                    }
+                }
                 if(found==1)
                 {
                     int tempLength=(strlen(word))-count;
@@ -1015,7 +1044,6 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                             }
                             tiles++;
                         }
-                        printf("Tile count is %d",tileCOunt);
                         *num_tiles_placed = tileCOunt;
                     }
                     else
@@ -1046,7 +1074,6 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                             }
                             tiles++;
                         }
-                        printf("Tile count is %d",tileCOunt);
                         *num_tiles_placed = tileCOunt;
                     }
                 }
