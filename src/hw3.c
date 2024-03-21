@@ -220,15 +220,15 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         {
                             if(game->store[row][i-1]>=1 || game->store[row][i]>=1)
                             {
-                                if(game->store[row][i-1]>=1)
+                                if(game->store[row][i]>=1)
                                 {
                                     touchHorizontal[0]=row;
-                                    touchHorizontal[1]=i-1;
+                                    touchHorizontal[1]=i;
                                 }
                                 else
                                 {
                                     touchHorizontal[0]=row;
-                                    touchHorizontal[1]=i;
+                                    touchHorizontal[1]=i-1;
                                 }
                                 first=i;
                                 checker=1;
@@ -243,15 +243,15 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         {
                             if(game->store[row][i+1]>=1 || game->store[row][i]>=1)
                             {
-                                if(game->store[row][i+1]>=1)
+                                if(game->store[row][i]>=1)
                                 {
                                     touchHorizontal[0]=row;
-                                    touchHorizontal[1]=i+1;
+                                    touchHorizontal[1]=i;
                                 }
                                 else
                                 {
                                     touchHorizontal[0]=row;
-                                    touchHorizontal[1]=i;
+                                    touchHorizontal[1]=i+1;
                                 }
                                 first=i;
                                 checker=1;
@@ -270,15 +270,15 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         {
                             if(game->store[row][i-1]>=1 || game->store[row][i]>=1)
                             {
-                                if(game->store[row][i-1]>=1)
+                                if(game->store[row][i]>=1)
                                 {
                                     touchHorizontal[0]=row;
-                                    touchHorizontal[1]=i-1;
+                                    touchHorizontal[1]=i;
                                 }
                                 else
                                 {
                                     touchHorizontal[0]=row;
-                                    touchHorizontal[1]=i;
+                                    touchHorizontal[1]=i-1;
                                 }
                                 first=i;
                                 checker=1;
@@ -338,14 +338,14 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         {
                             if(game->store[i-1][col]>=1 || game->store[i][col]>=1)
                             {
-                                if(game->store[i-1][col]>=1)
+                                if(game->store[i][col]>=1)
                                 {
-                                    touchVertical[0]=i-1;
+                                    touchVertical[0]=i;
                                     touchVertical[1]=col;
                                 }
                                 else
                                 {
-                                    touchVertical[0]=i;
+                                    touchVertical[0]=i-1;
                                     touchVertical[1]=col;
                                 }
                                 first=i;
@@ -361,14 +361,14 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         {
                             if(game->store[i+1][col]>=1 || game->store[i][col]>=1)
                             {
-                                if(game->store[i+1][col]>=1)
+                                if(game->store[i][col]>=1)
                                 {
-                                    touchVertical[0]=i+1;
+                                    touchVertical[0]=i;
                                     touchVertical[1]=col;
                                 }
                                 else
                                 {
-                                    touchVertical[0]=i;
+                                    touchVertical[0]=i+1;
                                     touchVertical[1]=col;
                                 }
                                 first=i;
@@ -389,14 +389,14 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         {
                             if(game->store[i-1][col]>=1 || game->store[i][col]>=1)
                             {
-                                if(game->store[i-1][col]>=1)
+                                if(game->store[i][col]>=1)
                                 {
-                                    touchVertical[0]=i-1;
+                                    touchVertical[0]=i;
                                     touchVertical[1]=col;
                                 }
                                 else
                                 {
-                                    touchVertical[0]=i;
+                                    touchVertical[0]=i-1;
                                     touchVertical[1]=col;
                                 }
                                 first=i;
@@ -455,7 +455,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                                 break;
                             }
                         }
-                        int traverse=count1;
+                        int traverse=touchHorizontal[0];
                         int j=row;
                         if(touchHorizontal[0]>row)
                         {
@@ -474,7 +474,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         //now start filling from traverse
                         while(traverse<=j)
                         {
-                            if(game->store[traverse][touchHorizontal[1]]>=1 && (c==' '))
+                            if(game->store[traverse][touchHorizontal[1]]>=1)
                             {
                                 word1[wordIndex1++]=game->board[traverse][touchHorizontal[1]][(game->store[traverse][touchHorizontal[1]])-1];
                             }
@@ -523,6 +523,82 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                             return game;
                         }
                     }
+                    if(row==touchHorizontal[0])
+                    {
+                            tiles=start;
+                            for(int i=col;i<touchHorizontal[1];i++)
+                            {
+                                tiles++;
+                            }
+                            if(*tiles!=' ' && col<=touchHorizontal[1])
+                            {
+                                count1=touchHorizontal[0];
+                                //find till .
+                                while(count1>0)
+                                {
+                                    if(game->store[count1-1][touchHorizontal[1]]>=1)
+                                    {
+                                        count1--;
+                                    }
+                                    else
+                                    {
+                                        break;
+                                    }
+                                }
+                                int traverse=count1;
+                                //fidning letter connected to our tile
+                                tiles=start;
+                                printf("Tiles is %s",tiles);
+                                char c;
+                                for(int i=col;i<=touchHorizontal[1];i++)
+                                {
+                                    c=*tiles;
+                                    tiles++;
+                                }
+                                tiles=start;
+                                //now start filling from traverse
+                                while(traverse<touchHorizontal[0])
+                                {
+                                    if(game->store[traverse][touchHorizontal[1]]>=1)
+                                    {
+                                        word1[wordIndex1++]=game->board[traverse][touchHorizontal[1]][(game->store[traverse][touchHorizontal[1]])-1];
+                                    }
+                                    traverse++;
+                                }
+                                word1[wordIndex1++]=c;
+                                traverse++;
+                                //till a . is found
+                                if((traverse<game->rows) && (game->store[traverse][touchHorizontal[1]])>=1)
+                                {
+                                    while((traverse<game->rows) && (game->store[traverse][touchHorizontal[1]])>=1 && isalpha(game->board[traverse][touchHorizontal[1]][(game->store[traverse][touchHorizontal[1]])-1]))
+                                    {
+                                        word1[wordIndex1++]=game->board[traverse][touchHorizontal[1]][(game->store[traverse][touchHorizontal[1]])-1];
+                                        traverse++;
+                                    }
+                                }
+                                word1[wordIndex1]='\0';
+                                int found1 =0;
+                                tiles=start;
+                                FILE* fpp = fopen("./tests/words.txt","r");
+                                char s1[100];
+                                while(!feof(fpp))
+                                {
+                                    fscanf(fpp,"%s",s1);
+                                    if(!strcasecmp(s1,word1))
+                                    {
+                                        found1=1;
+                                        break;
+                                    }
+                                }
+                                if(found1==0)
+                                {
+                                    *num_tiles_placed=0;
+                                    return game;
+                                }
+                            }
+                    
+                    }
+                    tiles=start;
                     if((col + length)>game->cols)
                     {
                         changeGameStateByCols(game,col,game->cols,length);
@@ -651,7 +727,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                         //now start filling from traverse
                         while(traverse<=j)
                         {
-                            if(game->store[touchVertical[0]][traverse]>=1 && (c==' '))
+                            if(game->store[touchVertical[0]][traverse]>=1)
                             {
                                 word1[wordIndex1++]=game->board[touchVertical[0]][traverse][(game->store[touchVertical[0]][traverse])-1];
                             }
@@ -700,6 +776,81 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                             return game;
                         }
                     }
+                    if(col==touchVertical[1])
+                    {
+                            tiles=start;
+                            for(int i=row;i<touchVertical[0];i++)
+                            {
+                                tiles++;
+                            }
+                            if(*tiles!=' ' && row<touchVertical[0])
+                            {
+                                count1=touchVertical[1];
+                                //find till .
+                                while(count1>0)
+                                {
+                                    if(game->store[touchVertical[0]][count1-1]>=1)
+                                    {
+                                        count1--;
+                                    }
+                                    else
+                                    {
+                                        break;
+                                    }
+                                }
+                                int traverse=count1;
+                                //fidning letter connected to our tile
+                                tiles=start;
+                                char c;
+                                for(int i=row;i<=touchVertical[0];i++)
+                                {
+                                    c=*tiles;
+                                    tiles++;
+                                }
+                                tiles=start;
+                                //now start filling from traverse
+                                while(traverse<touchVertical[1])
+                                {
+                                    if(game->store[touchVertical[0]][traverse]>=1)
+                                    {
+                                        word1[wordIndex1++]=game->board[touchVertical[0]][traverse][(game->store[touchVertical[0]][traverse])-1];
+                                    }
+                                    traverse++;
+                                }
+                                word1[wordIndex1++]=c;
+                                traverse++;
+                                //till a . is found
+                                if((traverse<game->cols) && (game->store[touchVertical[0]][traverse])>=1)
+                                {
+                                    while((traverse<game->cols) && (game->store[touchVertical[0]][traverse])>=1 && isalpha(game->board[touchVertical[0]][traverse][(game->store[touchVertical[0]][traverse])-1]))
+                                    {
+                                        word1[wordIndex1++]=game->board[touchVertical[0]][traverse][(game->store[touchVertical[0]][traverse])-1];
+                                        traverse++;
+                                    }
+                                }
+                                word1[wordIndex1]='\0';
+                                int found1 =0;
+                                tiles=start;
+                                FILE* fpp = fopen("./tests/words.txt","r");
+                                char s1[100];
+                                while(!feof(fpp))
+                                {
+                                    fscanf(fpp,"%s",s1);
+                                    if(!strcasecmp(s1,word1))
+                                    {
+                                        found1=1;
+                                        break;
+                                    }
+                                }
+                                if(found1==0)
+                                {
+                                    *num_tiles_placed=0;
+                                    return game;
+                                }
+                            }
+                    
+                    }
+                    tiles=start;
                     if((row + length)>game->rows)
                     {
                         changeGameStateByRows(game,row,game->rows,length);
@@ -864,6 +1015,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                             }
                             tiles++;
                         }
+                        printf("Tile count is %d",tileCOunt);
                         *num_tiles_placed = tileCOunt;
                     }
                     else
@@ -894,6 +1046,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                             }
                             tiles++;
                         }
+                        printf("Tile count is %d",tileCOunt);
                         *num_tiles_placed = tileCOunt;
                     }
                 }
