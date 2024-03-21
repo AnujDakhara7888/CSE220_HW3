@@ -6,8 +6,10 @@
 int main(void) {
     const char *actual_filename = "./tests/actual_outputs/test_output.txt";
     int num_tiles_placed;
-    GameState *game = initialize_game_state("./tests/boards/board04.txt");   
-    game = place_tiles(game, 4, 19, 'H', "INSERT", &num_tiles_placed);
+	GameState *game = initialize_game_state("./tests/boards/board01.txt"); 
+    game = place_tiles(game, 2, 3, 'V', "T PMAN", &num_tiles_placed);
+    game = place_tiles(game, 2, 5, 'V', "P TAL", &num_tiles_placed);
+    game = place_tiles(game, 6, 1, 'H', "SN I", &num_tiles_placed);
     save_game_state(game, actual_filename);
     free_game_state(game);
     return 0;
