@@ -133,31 +133,57 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                 { 
                     if(strlen(tiles)>=2)
                     {
+                        const char *start=tiles;
                         int length = strlen(tiles);
                         if(toupper(direction)=='H')
                         {
+                            int z=0;
                             if((col + length)>game->cols)
                             {
+                                z=(col+length)-game->cols;
                                 changeGameStateByCols(game,col,game->cols,length);
+                                
                             }
                             for(int i=col;i<(col + length);i++)
                             {
-                                game->board[row][i][0] = toupper(*(tiles++));
+                                game->board[row][i][0] = toupper(*(tiles));
                                 game->store[row][i] = 1;
+                                tiles++;
                             }
+                            game->changes=malloc(sizeof(TileChange));
+                            tiles=start;
+                            // when we add a word on board we store it in our dataStructure for Undo
+                            game->changes[0].row=row;
+                            game->changes[0].col=col;
+                            game->changes[0].numColsToBeRemoved=z;
+                            game->changes[0].numRowsToBeRemoved=0;
+                            game->changes[0].dir='H';
+                            game->changes[0].wordPutIn=start;
                             *num_tiles_placed = length;
                         }
                         else
                         {
+                            int z=0;
                             if((row + length)>game->rows)
                             {
+                                z=(row+length)-game->rows;
                                 changeGameStateByRows(game,row,game->rows,length);
                             }
                             for(int i=row;i<(row + length);i++)
                             {
-                                game->board[i][col][0] = toupper(*(tiles++));
+                                game->board[i][col][0] = toupper(*(tiles));
                                 game->store[i][col] = 1;
-                            }  
+                                tiles++;
+                            }
+                            game->changes=malloc(sizeof(TileChange));
+                            tiles=start;
+                            // when we add a word on board we store it in our dataStructure for Undo
+                            game->changes[0].row=row;
+                            game->changes[0].col=col;
+                            game->changes[0].numColsToBeRemoved=0;
+                            game->changes[0].numRowsToBeRemoved=z;
+                            game->changes[0].dir='V';
+                            game->changes[0].wordPutIn=start;
                             *num_tiles_placed=length;
                         }
                         game->firstTile=1;
@@ -418,8 +444,8 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                     return game;
                 }
                 //creating word and checking in file
-                char word[100];
-                char word1[100];
+                char word[100]={'\0'};
+                char word1[100]={'\0'};
                 int length = strlen(tiles);
                 int wordIndex=0;
                 int wordIndex1=0;
@@ -599,10 +625,6 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                     
                     }
                     tiles=start;
-                    // if((col + length)>game->cols)
-                    // {
-                    //     changeGameStateByCols(game,col,game->cols,length);
-                    // }
                     int i=0;
                     count=first;
                     //finding elmenet backwards to make word
@@ -792,7 +814,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                             {
                                 tiles++;
                             }
-                            if(*tiles!=' ' && row<touchVertical[0])
+                            if(*tiles!=' ' && row<=touchVertical[0])
                             {
                                 count1=touchVertical[1];
                                 //find till .
@@ -860,10 +882,6 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                     
                     }
                     tiles=start;
-                    // if((row + length)>game->rows)
-                    // {
-                    //     changeGameStateByRows(game,row,game->rows,length);
-                    // }
                     int i=0;
                     count=first;
                     //finding elmenet backwards to make word
@@ -1000,14 +1018,18 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                     }
                 }
                 tiles=start;
+                int changer=0;
                 if(tileCheck==1)
                 {
                     if(toupper(direction)=='H')
                     {
+                        
+                        changer=(col+length)-game->cols;
                         changeGameStateByCols(game,col,game->cols,length);
                     }
                     else
                     {
+                        changer=row+length-game->rows;
                         changeGameStateByRows(game,row,game->rows,length);
                     }
                 }
@@ -1016,10 +1038,12 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                     int tempLength=(strlen(word))-count;
                     int howMuch=0;
                     int tileCOunt=0;
+                    tiles=start;
                     if(toupper(direction)=='H')
                     {
                         for(int i=col;i<(col + tempLength);i++)
                         {
+                            //int x=0;
                             if(game->store[row][i]==0 && (isalpha(*tiles)))
                             {
                                 tileCOunt++;
@@ -1029,6 +1053,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                             }
                             else if(game->store[row][i]>=1 && (!isalpha(*tiles)))
                             {
+                                //x=1;
                                 howMuch++;
                             }
                             else
@@ -1038,18 +1063,29 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                                 game->board[row][i][(game->store[row][i])]=*tiles;
                                 game->store[row][i]=(game->store[row][i])+1;
                             }
+                            //make changes here for stack
                             if(*tiles=='\0')
                             {
                                 break;
                             }
                             tiles++;
                         }
+                        game->changes=realloc(game->changes,(game->firstTile+1)*sizeof(TileChange));
+                        tiles=start;
+                        // when we add a word on board we store it in our dataStructure for Undo
+                        game->changes[game->firstTile].row=row;
+                        game->changes[game->firstTile].col=col;
+                        game->changes[game->firstTile].numColsToBeRemoved=changer;
+                        game->changes[game->firstTile].numRowsToBeRemoved=0;
+                        game->changes[game->firstTile].dir='H';
+                        game->changes[game->firstTile].wordPutIn=start;
                         *num_tiles_placed = tileCOunt;
                     }
                     else
                     {
                         for(int i=row;i<(row + tempLength);i++)
                         {
+                            //int x=0;
                             if(game->store[i][col]==0 && (isalpha(*tiles)))
                             {
                                 tileCOunt++;
@@ -1059,6 +1095,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                             }
                             else if(game->store[i][col]>=1 && (!isalpha(*tiles)))
                             {
+                                //x=1;
                                 howMuch++;
                             }
                             else
@@ -1074,11 +1111,20 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                             }
                             tiles++;
                         }
+                        game->changes=realloc(game->changes,(game->firstTile+1)*sizeof(TileChange));
+                        tiles=start;
+                        // when we add a word on board we store it in our dataStructure for Undo
+                        game->changes[game->firstTile].row=row;
+                        game->changes[game->firstTile].col=col;
+                        game->changes[game->firstTile].numColsToBeRemoved=0;
+                        game->changes[game->firstTile].numRowsToBeRemoved=changer;
+                        game->changes[game->firstTile].dir='V';
+                        game->changes[game->firstTile].wordPutIn=start;
                         *num_tiles_placed = tileCOunt;
                     }
                 }
-                (void)touchVertical;
                 fclose(fp);
+                game->firstTile=game->firstTile+1;
                 return game;
             }
         }
@@ -1134,8 +1180,94 @@ void changeGameStateByRows(GameState *game, int rowNumber, int oldRow, int numRo
         }
     }
 }
-GameState* undo_place_tiles(GameState *game) {
-    (void)game;
+GameState* undo_place_tiles(GameState *game) 
+{
+    if(game->firstTile==0)
+    {
+        return game;
+    }
+    else
+    {
+        const char *p = game->changes[game->firstTile-1].wordPutIn;
+        if(game->changes[game->firstTile-1].dir=='H')
+        {
+            int tempCol=game->changes[game->firstTile-1].col;
+            while(*p!='\0')
+            {
+                //when something on tile nothing on board
+                if(*p!=' ')
+                {
+                    game->store[game->changes[game->firstTile-1].row][tempCol]=game->store[game->changes[game->firstTile-1].row][tempCol]-1;
+                    if(game->store[game->changes[game->firstTile-1].row][tempCol]==0)
+                    {
+                        game->board[game->changes[game->firstTile-1].row][tempCol][game->store[game->changes[game->firstTile-1].row][tempCol]]='.';
+                    }
+                }
+                //something on board nothing on tile
+                else if(*p==' ')
+                {
+
+                }
+                //somehting on board and on tile
+                else 
+                {
+                    game->store[game->changes[game->firstTile-1].row][tempCol]=game->store[game->changes[game->firstTile-1].row][tempCol]-1;
+                }
+                tempCol++;
+                p++;
+            }
+        }
+        else
+        {
+            int tempRow=game->changes[game->firstTile-1].row;
+            while(*p!='\0')
+            {
+                //when something on tile nothing on board
+                if(*p!=' ')
+                {
+                    game->store[tempRow][game->changes[game->firstTile-1].col]=game->store[tempRow][game->changes[game->firstTile-1].col]-1;
+                    if(game->store[tempRow][game->changes[game->firstTile-1].col]==0)
+                    {
+                        game->board[tempRow][game->changes[game->firstTile-1].col][game->store[tempRow][game->changes[game->firstTile-1].col]]='.';
+                    }
+                }
+                //something on board nothing on tile
+                else if(*p==' ')
+                {
+
+                }
+                //somehting on board and on tile
+                else 
+                {
+                    game->store[tempRow][game->changes[game->firstTile-1].col]=game->store[tempRow][game->changes[game->firstTile-1].col]-1;
+                }
+                tempRow++;
+                p++;
+            }
+        }
+        if(game->changes[game->firstTile-1].numColsToBeRemoved!=0)
+        {
+            for(int i=0;i<game->rows;i++)
+            {
+                game->board[i]=realloc(game->board[i],(game->cols-game->changes[game->firstTile-1].numColsToBeRemoved)*sizeof(char*));
+            }
+            game->cols=game->cols-game->changes[game->firstTile-1].numColsToBeRemoved;
+        }
+        if(game->changes[game->firstTile-1].numRowsToBeRemoved!=0)
+        {
+            for(int i=(game->rows-game->changes[game->firstTile-1].numRowsToBeRemoved);i<game->rows;i++)
+            {
+                for(int j=0;j<game->cols;j++)
+                {
+                    free(game->board[i][j]);
+                }
+                free(game->board[i]);
+            }
+            game->board=realloc(game->board,(game->rows-game->changes[game->firstTile-1].numRowsToBeRemoved*sizeof(char**)));
+            game->rows=game->rows-game->changes[game->firstTile-1].numRowsToBeRemoved;
+        }
+        game->firstTile=game->firstTile-1; 
+    }
     return game;
 }
 
