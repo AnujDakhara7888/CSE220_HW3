@@ -7,6 +7,8 @@ typedef struct GameState
     int rows;
     int cols;
     int firstTile;
+    int onBoardThere;
+    int mainCheck;
     struct TileChange *changes;
 } GameState;
 

@@ -57,7 +57,7 @@ GameState* initialize_game_state(const char *filename) {
         }
         fseek(fp, 0, SEEK_SET);
         int currentRow = 0, currentCol = 0;
-
+        state->onBoardThere=0;
         while ((c = fgetc(fp)) != EOF && currentRow < rowCount) {
             if (c == '\n') 
             {
@@ -73,12 +73,13 @@ GameState* initialize_game_state(const char *filename) {
                 }
                 else 
                 {
-                    state->firstTile=1;
+                    state->onBoardThere=1;
                     state->store[currentRow][currentCol] = 1;
                 }
                 currentCol++; 
             }
         }
+        state->mainCheck=0;
         fclose(fp);
         return state;
     }
@@ -90,7 +91,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
     {
         if(toupper(direction) == 'V' || toupper(direction) == 'H')
         {
-            if(game->firstTile == 0)
+            if(game->onBoardThere==0 && game->firstTile==0)
             {
                 FILE* fp = fopen("./tests/words.txt","r");
                 int found =0;
@@ -150,15 +151,30 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                                 game->store[row][i] = 1;
                                 tiles++;
                             }
-                            game->changes=malloc(sizeof(TileChange));
-                            tiles=start;
+                            if(game->mainCheck==0)
+                            {
+                                game->changes=malloc(sizeof(TileChange));
+                                tiles=start;
                             // when we add a word on board we store it in our dataStructure for Undo
-                            game->changes[0].row=row;
-                            game->changes[0].col=col;
-                            game->changes[0].numColsToBeRemoved=z;
-                            game->changes[0].numRowsToBeRemoved=0;
-                            game->changes[0].dir='H';
-                            game->changes[0].wordPutIn=start;
+                                game->changes[0].row=row;
+                                game->changes[0].col=col;
+                                game->changes[0].numColsToBeRemoved=z;
+                                game->changes[0].numRowsToBeRemoved=0;
+                                game->changes[0].dir='H';
+                                game->changes[0].wordPutIn=start;
+                            }
+                            else
+                            {
+                                game->changes=realloc(game->changes,(game->firstTile+1)*sizeof(TileChange));
+                                tiles=start;
+                                // when we add a word on board we store it in our dataStructure for Undo
+                                game->changes[game->firstTile].row=row;
+                                game->changes[game->firstTile].col=col;
+                                game->changes[game->firstTile].numColsToBeRemoved=z;
+                                game->changes[game->firstTile].numRowsToBeRemoved=0;
+                                game->changes[game->firstTile].dir='H';
+                                game->changes[game->firstTile].wordPutIn=start;
+                            }
                             *num_tiles_placed = length;
                         }
                         else
@@ -175,22 +191,39 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                                 game->store[i][col] = 1;
                                 tiles++;
                             }
-                            game->changes=malloc(sizeof(TileChange));
-                            tiles=start;
-                            // when we add a word on board we store it in our dataStructure for Undo
-                            game->changes[0].row=row;
-                            game->changes[0].col=col;
-                            game->changes[0].numColsToBeRemoved=0;
-                            game->changes[0].numRowsToBeRemoved=z;
-                            game->changes[0].dir='V';
-                            game->changes[0].wordPutIn=start;
+                            if(game->mainCheck==0)
+                            {
+                                game->changes=malloc(sizeof(TileChange));
+                                tiles=start;
+                                // when we add a word on board we store it in our dataStructure for Undo
+                                game->changes[0].row=row;
+                                game->changes[0].col=col;
+                                game->changes[0].numColsToBeRemoved=0;
+                                game->changes[0].numRowsToBeRemoved=z;
+                                game->changes[0].dir='V';
+                                game->changes[0].wordPutIn=start;
+                            }
+                            else
+                            {
+                                game->changes=realloc(game->changes,(game->firstTile+1)*sizeof(TileChange));
+                                tiles=start;
+                                // when we add a word on board we store it in our dataStructure for Undo
+                                game->changes[game->firstTile].row=row;
+                                game->changes[game->firstTile].col=col;
+                                game->changes[game->firstTile].numColsToBeRemoved=0;
+                                game->changes[game->firstTile].numRowsToBeRemoved=z;
+                                game->changes[game->firstTile].dir='V';
+                                game->changes[game->firstTile].wordPutIn=start;
+                            }
                             *num_tiles_placed=length;
                         }
-                        game->firstTile=1;
+                        game->firstTile=game->firstTile+1;
+                        game->mainCheck=game->mainCheck+1;
                         return game;
                     }
                     else
                     {
+                        *num_tiles_placed=0;
                         return game;
                     }
                 }
@@ -441,6 +474,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                 }
                 if(checker==0)
                 {
+                    *num_tiles_placed=0;
                     return game;
                 }
                 //creating word and checking in file
@@ -1025,11 +1059,13 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                     {
                         
                         changer=(col+length)-game->cols;
+                        printf("Changer Here is %d\n",changer);
                         changeGameStateByCols(game,col,game->cols,length);
                     }
                     else
                     {
                         changer=row+length-game->rows;
+                        printf("Changer is %d\n",changer);
                         changeGameStateByRows(game,row,game->rows,length);
                     }
                 }
@@ -1070,15 +1106,31 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                             }
                             tiles++;
                         }
-                        game->changes=realloc(game->changes,(game->firstTile+1)*sizeof(TileChange));
-                        tiles=start;
-                        // when we add a word on board we store it in our dataStructure for Undo
-                        game->changes[game->firstTile].row=row;
-                        game->changes[game->firstTile].col=col;
-                        game->changes[game->firstTile].numColsToBeRemoved=changer;
-                        game->changes[game->firstTile].numRowsToBeRemoved=0;
-                        game->changes[game->firstTile].dir='H';
-                        game->changes[game->firstTile].wordPutIn=start;
+                        if(game->mainCheck==0)
+                        {
+                            game->changes=malloc(sizeof(TileChange));
+                            tiles=start;
+                            // when we add a word on board we store it in our dataStructure for Undo
+                            game->changes[0].row=row;
+                            game->changes[0].col=col;
+                            game->changes[0].numColsToBeRemoved=changer;
+                            game->changes[0].numRowsToBeRemoved=0;
+                            game->changes[0].dir='H';
+                            game->mainCheck=game->mainCheck+1;
+                            game->changes[0].wordPutIn=start;
+                        }
+                        else
+                        {
+                            game->changes=realloc(game->changes,(game->firstTile+1)*sizeof(TileChange));
+                            tiles=start;
+                            // when we add a word on board we store it in our dataStructure for Undo
+                            game->changes[game->firstTile].row=row;
+                            game->changes[game->firstTile].col=col;
+                            game->changes[game->firstTile].numColsToBeRemoved=changer;
+                            game->changes[game->firstTile].numRowsToBeRemoved=0;
+                            game->changes[game->firstTile].dir='H';
+                            game->changes[game->firstTile].wordPutIn=start;
+                        }
                         *num_tiles_placed = tileCOunt;
                     }
                     else
@@ -1111,15 +1163,31 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                             }
                             tiles++;
                         }
-                        game->changes=realloc(game->changes,(game->firstTile+1)*sizeof(TileChange));
-                        tiles=start;
-                        // when we add a word on board we store it in our dataStructure for Undo
-                        game->changes[game->firstTile].row=row;
-                        game->changes[game->firstTile].col=col;
-                        game->changes[game->firstTile].numColsToBeRemoved=0;
-                        game->changes[game->firstTile].numRowsToBeRemoved=changer;
-                        game->changes[game->firstTile].dir='V';
-                        game->changes[game->firstTile].wordPutIn=start;
+                        if(game->mainCheck==0)
+                        {
+                            game->changes=malloc(sizeof(TileChange));
+                            tiles=start;
+                            // when we add a word on board we store it in our dataStructure for Undo
+                            game->changes[0].row=row;
+                            game->changes[0].col=col;
+                            game->mainCheck=game->mainCheck+1;
+                            game->changes[0].numColsToBeRemoved=0;
+                            game->changes[0].numRowsToBeRemoved=changer;
+                            game->changes[0].dir='V';
+                            game->changes[0].wordPutIn=start;
+                        }
+                        else
+                        {
+                            game->changes=realloc(game->changes,(game->firstTile+1)*sizeof(TileChange));
+                            tiles=start;
+                            // when we add a word on board we store it in our dataStructure for Undo
+                            game->changes[game->firstTile].row=row;
+                            game->changes[game->firstTile].col=col;
+                            game->changes[game->firstTile].numColsToBeRemoved=0;
+                            game->changes[game->firstTile].numRowsToBeRemoved=changer;
+                            game->changes[game->firstTile].dir='V';
+                            game->changes[game->firstTile].wordPutIn=start;
+                        }
                         *num_tiles_placed = tileCOunt;
                     }
                 }
@@ -1134,7 +1202,7 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
             return game;
         }
     }
-   
+   *num_tiles_placed=0;
     return game;
     
 }
@@ -1249,7 +1317,13 @@ GameState* undo_place_tiles(GameState *game)
         {
             for(int i=0;i<game->rows;i++)
             {
+                for(int j = game->cols-game->changes[game->firstTile - 1].numColsToBeRemoved; j < game->cols; j++)
+                {
+                    free(game->board[i][j]);
+                }
+
                 game->board[i]=realloc(game->board[i],(game->cols-game->changes[game->firstTile-1].numColsToBeRemoved)*sizeof(char*));
+                game->store[i]=realloc(game->store[i],(game->cols-game->changes[game->firstTile-1].numColsToBeRemoved)*sizeof(int));
             }
             game->cols=game->cols-game->changes[game->firstTile-1].numColsToBeRemoved;
         }
@@ -1262,8 +1336,10 @@ GameState* undo_place_tiles(GameState *game)
                     free(game->board[i][j]);
                 }
                 free(game->board[i]);
+                free(game->store[i]);
             }
-            game->board=realloc(game->board,(game->rows-game->changes[game->firstTile-1].numRowsToBeRemoved*sizeof(char**)));
+            game->board=realloc(game->board,(game->rows-game->changes[game->firstTile-1].numRowsToBeRemoved)*sizeof(char**));
+            game->store=realloc(game->store,(game->rows-game->changes[game->firstTile-1].numRowsToBeRemoved)*sizeof(int*));
             game->rows=game->rows-game->changes[game->firstTile-1].numRowsToBeRemoved;
         }
         game->firstTile=game->firstTile-1; 
@@ -1285,6 +1361,11 @@ void free_game_state(GameState *game)
     }
     free(game->board);
     free(game->store);
+    
+    if(game->firstTile != 0)
+    {
+        free(game->changes);
+    }
 
     free(game);
 }
