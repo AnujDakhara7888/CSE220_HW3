@@ -1059,13 +1059,11 @@ GameState* place_tiles(GameState *game, int row, int col, char direction, const 
                     {
                         
                         changer=(col+length)-game->cols;
-                        printf("Changer Here is %d\n",changer);
                         changeGameStateByCols(game,col,game->cols,length);
                     }
                     else
                     {
                         changer=row+length-game->rows;
-                        printf("Changer is %d\n",changer);
                         changeGameStateByRows(game,row,game->rows,length);
                     }
                 }
@@ -1344,6 +1342,8 @@ GameState* undo_place_tiles(GameState *game)
         }
         game->firstTile=game->firstTile-1; 
     }
+    game->changes = realloc(game->changes, game->firstTile * sizeof(TileChange));
+
     return game;
 }
 
